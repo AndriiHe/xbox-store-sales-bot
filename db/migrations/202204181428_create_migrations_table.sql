@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS migrations
+(
+    name       VARCHAR(500) NOT NULL,
+    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (name)
+);
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
