@@ -3,6 +3,10 @@ const { from, zip, of } = require('rxjs');
 const { mergeMap, map, reduce, retry } = require('rxjs/operators');
 
 const PER_PAGE = 200;
+const productPlatforms = {
+  'XBOX': 'Windows.Xbox',
+  'DESKTOP': 'Windows.Desktop',
+}
 const PURCHASE_ACTION = 'Purchase';
 const BROWSE_ACTION = 'Browse';
 const LANGUAGE = 'en-us';
@@ -69,12 +73,14 @@ const getGamePassProducts = (market) => from(gamePassCategories).pipe(
 const getPrices = (product) => {
   const prices = getAvailabilities(product).map(availability => ({
     ...availability.OrderManagementData.Price,
-    platforms: availability.Conditions.ClientConditions.AllowedPlatforms,
+    platforms: availability.Conditions.ClientConditions.AllowedPlatforms.filter(platform => {
+      return platform.PlatformName === productPlatforms.XBOX || platform.PlatformName === productPlatforms.DESKTOP;
+    }),
     requiredProductId: availability.Remediations?.pop()?.BigId,
   }));
 
   return prices
-    .sort((a, b) => a.ListPrice > b.ListPrice ? -1 : a.ListPrice < b.ListPrice ? 1 : 0)
+    .sort((a, b) => a.ListPrice < b.ListPrice ? -1 : a.ListPrice > b.ListPrice ? 1 : 0)
     .filter((price, index) => prices.findIndex(p => p.requiredProductId === price.requiredProductId) === index);
 }
 

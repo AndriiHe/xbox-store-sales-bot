@@ -1,9 +1,8 @@
 WITH targetCurrency AS (
-  VALUES('UAH')
+  VALUES('TRY')
 ), exchangeRates AS (
   SELECT jsonb_object_agg(r.name, c."exchangeRates")
-  FROM currencies c
-         LEFT JOIN regions r on c.code = r.currency
+  FROM currencies c LEFT JOIN regions r on c.code = r.currency
   WHERE r.name IS NOT NULL
 ), plainPrices AS (
   select DISTINCT
@@ -30,4 +29,4 @@ WITH targetCurrency AS (
          LEFT JOIN products pr ON pr.id = p."productId"
          LEFT JOIN products rp ON rp.id = p."requiredProductId"
   WHERE rank = 1
-) SELECT * from topPrices ORDER BY discount DESC, "recommendedPrice" DESC;
+) SELECT * FROM topPrices ORDER BY discount DESC, "recommendedPrice" DESC;
