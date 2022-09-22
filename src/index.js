@@ -6,6 +6,7 @@ const Db = require('./db');
 const { handleJob } = require('./jobs');
 const cron = require('./crons');
 const bot = require('./bot');
+const app = require('./api')
 
 dotenv.config();
 
@@ -15,3 +16,6 @@ queue.process(handleJob({ db, logger }));
 
 cron.setup({ db, queue, logger });
 bot.launch({ db, logger });
+app.launch({db, logger});
+
+
