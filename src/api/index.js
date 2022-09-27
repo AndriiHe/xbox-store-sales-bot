@@ -17,7 +17,9 @@ module.exports = {
 
     app.get('/sales', function (req, res) {
       const queryName = req.query.name ? req.query.name : ''
-      getChipestProduct({ db, name: queryName }).subscribe(
+      const queryCurrency = req.query.currency ? req.query.currency : 'USD'
+      const queryRegion = req.query.region ? req.query.region : 'AR'
+      getChipestProduct({ db,  currency: queryCurrency,name: queryName, region: queryRegion }).subscribe(
         (product) => (res.send(product), errorHandler))
     })
     

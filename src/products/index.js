@@ -42,23 +42,23 @@ const createProductPrices = ({ db, products }) => {
   );
 };
 
-const getChipestProduct = ({ db, name }) => db.query(`WITH targetCurrency AS (
-  VALUES('UAH')
-), exchangeRates AS (
+const getChipestProduct = ({ db, currency, name, region }) => db.query(`WITH
+exchangeRates AS (
   SELECT jsonb_object_agg(r.name, c."exchangeRates")
-  FROM currencies c
-         LEFT JOIN regions r on c.code = r.currency
+  FROM currencies c LEFT JOIN regions r on c.code = r.currency
   WHERE r.name IS NOT NULL
 ), plainPrices AS (
   select DISTINCT
-    "productId",
-    row_number() over (partition by "productId" order by ROUND((price -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> (table targetCurrency))::numeric, 2)) AS rank,
+    cp."productId",
+    row_number() over (partition by cp."productId" order by ROUND((cp.price -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> $1)::numeric, 2)) AS rank,
     region,
-    "requiredProductId",
-    ROUND((price -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> (table targetCurrency))::numeric, 2) AS "price",
-    ROUND(("recommendedPrice" -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> (table targetCurrency))::numeric, 2) AS "recommendedPrice"
-  FROM prices CROSS JOIN jsonb_object_keys(price) AS region
-  WHERE "fetchedAt"=DATE(NOW()) AND platform = 'Windows.Xbox'
+    cp."requiredProductId",
+    ROUND((cp.price -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> $1)::numeric, 2) AS "price",
+    ROUND((cp."recommendedPrice" -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> $1)::numeric, 2) AS "recommendedPrice"
+  FROM prices cp
+  CROSS JOIN jsonb_object_keys(price) AS region
+  LEFT JOIN prices pp on cp."productId" = pp."productId" AND pp."fetchedAt" = CURRENT_DATE - interval '1 day' AND pp.platform = 'Windows.Xbox' AND pp."requiredProductId" = cp."requiredProductId"
+  WHERE cp."fetchedAt"=CURRENT_DATE AND cp.platform = 'Windows.Xbox' AND (cp.price->>region)::numeric < (pp.price->>region)::numeric AND region = $2
 ), topPrices AS (
   SELECT
     p."productId",
@@ -74,7 +74,11 @@ const getChipestProduct = ({ db, name }) => db.query(`WITH targetCurrency AS (
          LEFT JOIN products pr ON pr.id = p."productId"
          LEFT JOIN products rp ON rp.id = p."requiredProductId"
   WHERE rank = 1
-) SELECT * from topPrices WHERE name like '%${name}%' ORDER BY discount DESC, "recommendedPrice" DESC;
-`).pipe(map(({ rows }) => rows))
+) SELECT * FROM topPrices WHERE name like '%' || $3 || '%' ORDER BY discount DESC, "recommendedPrice" DESC;`,
+[
+  currency,
+  region,
+  name
+]).pipe(map(({ rows }) => rows))
 
 module.exports = { getProducts, createProducts, createProductPrices, getChipestProduct };
