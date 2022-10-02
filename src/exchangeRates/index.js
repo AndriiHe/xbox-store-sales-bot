@@ -1,6 +1,6 @@
 const { map } = require('rxjs/operators');
 
-const getCurrencies = ({ db }) => db.query(`SELECT "code" FROM "currencies" WHERE "isDeleted" = FALSE`).pipe(
+const getCurrencies = ({ db }) => db.query(`SELECT "code" FROM "currencies" WHERE "isDeleted" = FALSE ORDER BY "code";`).pipe(
   map(({ rows }) => rows.map(({ code }) => code)),
 );
 

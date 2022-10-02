@@ -1,3 +1,0 @@
-module.exports = {
-  SELECT_PRIMARY_REGION: 'SELECT_PRIMARY_REGION',
-}
