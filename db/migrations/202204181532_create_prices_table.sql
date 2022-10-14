@@ -13,6 +13,7 @@ IF NOT EXISTS(SELECT * FROM migrations WHERE name = migration_name) THEN
         "platform"          VARCHAR(20) NOT NULL,
         "price"             jsonb       NOT NULL,
         "recommendedPrice"  jsonb       NOT NULL,
+        "endDate"           TIMESTAMP   NULL,
         "fetchedAt"         DATE        NOT NULL DEFAULT NOW(),
         PRIMARY KEY ("productId", "fetchedAt", "requiredProductId", "platform"),
         CONSTRAINT "fk_productId" FOREIGN KEY("productId") REFERENCES products("id")

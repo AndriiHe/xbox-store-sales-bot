@@ -76,6 +76,7 @@ const getPrices = (product) => {
     platforms: availability.Conditions.ClientConditions.AllowedPlatforms.filter(platform => {
       return platform.PlatformName === productPlatforms.XBOX || platform.PlatformName === productPlatforms.DESKTOP;
     }),
+    endDate: availability.Conditions.EndDate,
     requiredProductId: availability.Remediations?.pop()?.BigId,
   }));
 
@@ -100,6 +101,7 @@ const getProductsDetails = (ids, market) => from(chunk(ids, PER_PAGE)).pipe(
           price: { [market]: price.ListPrice || 0 },
           recommendedPrice: { [market]: price.MSRP },
           requiredProductId: price.requiredProductId || '',
+          endDate: price.endDate || null,
           platform: platform.PlatformName,
         }))
       ], []),

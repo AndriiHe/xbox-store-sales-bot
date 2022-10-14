@@ -25,8 +25,8 @@ const createProductPrices = ({ db, products }) => {
   ], []);
   return db.query(
     `
-        INSERT INTO prices("productId", "price", "recommendedPrice", "requiredProductId", "platform")
-        SELECT * FROM UNNEST ($1::text[], $2::jsonb[], $3::jsonb[], $4::text[], $5::text[])
+        INSERT INTO prices("productId", "price", "recommendedPrice", "requiredProductId", "platform", "endDate")
+        SELECT * FROM UNNEST ($1::text[], $2::jsonb[], $3::jsonb[], $4::text[], $5::text[], $6::timestamp[])
         ON CONFLICT("productId", "fetchedAt", "requiredProductId", "platform")
         DO UPDATE SET
             "price" = (SELECT "price" FROM prices WHERE "productId" = excluded."productId" AND "fetchedAt" = excluded."fetchedAt" AND "requiredProductId" = excluded."requiredProductId" AND "platform" = excluded."platform")::jsonb || excluded.price::jsonb,
@@ -38,6 +38,7 @@ const createProductPrices = ({ db, products }) => {
       items.map(({ recommendedPrice }) => JSON.stringify(recommendedPrice)),
       items.map(({ requiredProductId }) => requiredProductId),
       items.map(({ platform }) => platform),
+      items.map(({ endDate }) => endDate),
     ]
   );
 };
@@ -54,6 +55,7 @@ const getProductPrices = ({ db, page, perPage, regions, currency, name, platform
         cp."productId",
         row_number() over (partition by cp."productId" order by ROUND((cp.price -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> $1)::numeric, 2)) AS rank,
         region,
+        cp."endDate",
         cp."requiredProductId",
         ROUND((cp.price -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> $1)::numeric, 2) AS "price",
         ROUND((cp."recommendedPrice" -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> $1)::numeric, 2) AS "recommendedPrice"
@@ -66,6 +68,7 @@ const getProductPrices = ({ db, page, perPage, regions, currency, name, platform
       SELECT
         p.region,
         p.price,
+        p."endDate",
         p."recommendedPrice",
         ROUND(CASE WHEN "recommendedPrice" = 0 THEN 0 ELSE ("recommendedPrice" - "price")/"recommendedPrice" END, 2) * 100 AS discount,
         jsonb_build_object(
