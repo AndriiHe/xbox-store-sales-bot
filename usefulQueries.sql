@@ -15,10 +15,12 @@ WITH targetCurrency AS (
     ROUND((cp."recommendedPrice" -> "region")::numeric * ((SELECT * FROM exchangeRates) -> "region" -> (table targetCurrency))::numeric, 2) AS "recommendedPrice"
   FROM prices cp
          CROSS JOIN jsonb_object_keys(price) AS region
-  LEFT JOIN prices pp on cp."productId" = pp."productId" AND pp."fetchedAt" = CURRENT_DATE - interval '1 day' AND pp.platform = 'Windows.Xbox' AND pp."requiredProductId" = cp."requiredProductId"
+--   LEFT JOIN prices pp on cp."productId" = pp."productId" AND pp."fetchedAt" = CURRENT_DATE - interval '1 day' AND pp.platform = 'Windows.Xbox' AND pp."requiredProductId" = cp."requiredProductId"
   WHERE cp."fetchedAt"=CURRENT_DATE
+--     AND "productId" ILIKE 'CF%'
+    AND region = 'TR'
     AND cp.platform = 'Windows.Xbox'
-    AND (cp.price->>region)::numeric < (pp.price->>region)::numeric
+--     AND (cp.price->>region)::numeric < (pp.price->>region)::numeric
 ), topPrices AS (
   SELECT
     p."productId",

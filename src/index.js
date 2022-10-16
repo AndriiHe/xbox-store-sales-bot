@@ -1,12 +1,18 @@
 const Queue = require('bull');
 const dotenv = require('dotenv');
 const express = require('express');
+const TelegramBot = require('node-telegram-bot-api');
 
 const logger = require('./logger');
 const Db = require('./db');
 const { handleJob } = require('./jobs');
 const cron = require('./crons');
 const { getProductPrices } = require('./products');
+const onStart = require('./bot/actions/onStart');
+const onCallback = require('./bot/actions/onCallback');
+const onSubscribe = require('./bot/actions/onSubscribe');
+const onUnsubscribe = require('./bot/actions/onUnsubscribe');
+const { START, CALLBACK, SUBSCRIBE, UNSUBSCRIBE } = require('./bot/actions');
 
 dotenv.config();
 
@@ -14,6 +20,12 @@ const port = process.env.PORT || 3000;
 const db = new Db(process.env.DATABASE_URL);
 const queue = new Queue('jobs', process.env.REDIS_URL);
 const app = express();
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
+
+bot.onText(START, onStart({ db, bot }));
+bot.onText(SUBSCRIBE, onSubscribe({ db, bot }));
+bot.onText(UNSUBSCRIBE, onUnsubscribe({ db, bot }));
+bot.on(CALLBACK, onCallback({ db, bot }));
 
 queue.process(handleJob({ db, logger }));
 
